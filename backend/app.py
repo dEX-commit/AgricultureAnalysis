@@ -29,7 +29,10 @@ CORS(app)  # allow the frontend (served from a different origin/file) to call th
 # CONFIG — edit these to match your trained model
 # ---------------------------------------------------------------------------
 
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "model", "chilli_model.h5")
+MODEL_PATH = os.path.join(
+    os.path.dirname(__file__),
+    "vgg16_chili_final.keras"
+)
 IMG_SIZE = (224, 224)  # match whatever size you trained on (224x224 is VGG16 default)
 
 # Order MUST match the order of your model's output classes (e.g. from
