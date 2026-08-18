@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agriculture Analysis — Chilli Crop Scanner</title>
+<style>
+  :root{
+    --soil-black: #14200f;
+    --leaf-deep: #1f3318;
+    --leaf-mid: #35502a;
+    --chilli-red: #d1382a;
+    --chilli-red-bright: #e8543f;
+    --turmeric: #e2a13a;
+    --cream: #f3ecd9;
+    --cream-dim: #cfc7ac;
+    --line: rgba(243,236,217,0.14);
+    --font-display: 'Roboto Slab', 'Bitter', Georgia, serif;
+    --font-body: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+  }
+
+  @font-face{
+    font-family:'Roboto Slab'; src:local('Roboto Slab');
+  }
+
+  *{ box-sizing: border-box; }
+
+  html,body{
+    margin:0; padding:0;
+    background: var(--soil-black);
+    color: var(--cream);
+    font-family: var(--font-body);
+    scroll-behavior: smooth;
+  }
+
+  body{
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(53,80,42,0.55), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 10%, rgba(209,56,42,0.10), transparent 55%),
+      var(--soil-black);
+    min-height: 100vh;
+  }
+
+  /* ---------- NAV ---------- */
+  header.site{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 26px 6vw 18px;
+    border-bottom: 1px solid var(--line);
+  }
+  .brand{
+    display:flex; align-items:center; gap:12px;
+  }
+  .brand-mark{
+    width:34px; height:34px; flex-shrink:0;
+  }
+  .brand-text{
+    font-family: var(--font-display);
+    font-size: 20px;
+    letter-spacing: 0.02em;
+  }
+  .brand-text b{ color: var(--chilli-red-bright); font-weight: 700; }
+  nav.site-links{
+    display:flex; gap: 28px;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--cream-dim);
+  }
+  nav.site-links a{ color: inherit; text-decoration:none; }
+  nav.site-links a:hover{ color: var(--cream); }
+
+  /* ---------- HERO / TOOL ---------- */
+  main{
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 56px 6vw 100px;
+  }
+
+  .eyebrow{
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--turmeric);
+    display:flex; align-items:center; gap:10px;
+    margin-bottom: 18px;
+  }
+  .eyebrow::before{
+    content:''; width:8px; height:8px; border-radius:50%;
+    background: var(--chilli-red-bright);
+    box-shadow: 0 0 0 4px rgba(209,56,42,0.18);
+  }
+
+  h1.hero-title{
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(34px, 5vw, 56px);
+    line-height: 1.05;
+    margin: 0 0 18px;
+    max-width: 16ch;
+  }
+  h1.hero-title em{
+    font-style: normal;
+    color: var(--chilli-red-bright);
+  }
+
+  p.hero-sub{
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--cream-dim);
+    max-width: 56ch;
+    margin: 0 0 44px;
+  }
+
+  /* ---------- SCAN PANEL ---------- */
+  .scan-panel{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    overflow: hidden;
+    background: linear-gradient(180deg, rgba(53,80,42,0.28), rgba(31,51,24,0.35));
+    backdrop-filter: blur(2px);
+  }
+  @media (max-width: 860px){
+    .scan-panel{ grid-template-columns: 1fr; }
+  }
+
+  .drop-side{
+    padding: 36px;
+    border-right: 1px solid var(--line);
+    display:flex; flex-direction:column;
+  }
+  @media (max-width: 860px){
+    .drop-side{ border-right:none; border-bottom: 1px solid var(--line); }
+  }
+
+  .drop-label{
+    font-family: var(--font-mono);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--cream-dim);
+    margin-bottom: 14px;
+  }
+
+  .dropzone{
+    position: relative;
+    flex: 1;
+    min-height: 300px;
+    border: 1.5px dashed rgba(226,161,58,0.4);
+    border-radius: 14px;
+    display:flex; align-items:center; justify-content:center;
+    text-align:center;
+    cursor: pointer;
+    padding: 28px;
+    transition: border-color .2s ease, background .2s ease;
+    overflow: hidden;
+    background: rgba(20,32,15,0.35);
+  }
+  .dropzone:hover, .dropzone.drag{
+    border-color: var(--chilli-red-bright);
+    background: rgba(209,56,42,0.06);
+  }
+  .dropzone input{ display:none; }
+
+  .dz-empty{ display:flex; flex-direction:column; align-items:center; gap: 14px; }
+  .dz-icon{ width: 52px; height:52px; opacity:0.85; }
+  .dz-empty p.main{ margin:0; font-size:15px; color: var(--cream); }
+  .dz-empty p.sub{ margin:0; font-size: 12.5px; color: var(--cream-dim); }
+  .dz-btn{
+    margin-top: 6px;
+    display:inline-block;
+    padding: 9px 20px;
+    background: var(--chilli-red);
+    color: var(--cream);
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+  }
+
+  .dz-preview{
+    position:absolute; inset:0;
+    display:none;
+  }
+  .dz-preview.active{ display:block; }
+  .dz-preview img{
+    width:100%; height:100%; object-fit: cover;
+    filter: saturate(1.05);
+  }
+  .dz-preview .swap{
+    position:absolute; top:10px; right:10px;
+    background: rgba(20,32,15,0.8);
+    border: 1px solid var(--line);
+    color: var(--cream);
+    font-size: 11px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* scan-line sweep */
+  .scan-sweep{
+    position:absolute; left:0; right:0; height: 3px;
+    background: linear-gradient(90deg, transparent, var(--turmeric), var(--chilli-red-bright), transparent);
+    box-shadow: 0 0 14px 2px rgba(232,84,63,0.7);
+    top: -10%;
+    opacity: 0;
+  }
+  .scan-sweep.running{
+    animation: sweep 1.6s ease-in-out infinite;
+    opacity: 1;
+  }
+  @keyframes sweep{
+    0%{ top: -4%; }
+    50%{ top: 100%; }
+    100%{ top: -4%; }
+  }
+
+  .analyze-row{
+    display:flex; align-items:center; gap:14px;
+    margin-top: 18px;
+  }
+  .analyze-btn{
+    flex:1;
+    padding: 14px 20px;
+    border-radius: 12px;
+    background: var(--chilli-red-bright);
+    color: var(--soil-black);
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.01em;
+    border: none;
+    cursor: pointer;
+    transition: transform .12s ease, background .2s ease;
+  }
+  .analyze-btn:hover{ background: var(--turmeric); }
+  .analyze-btn:active{ transform: scale(0.98); }
+  .analyze-btn:disabled{
+    background: rgba(207,199,172,0.18);
+    color: var(--cream-dim);
+    cursor: not-allowed;
+  }
+  .clear-btn{
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--cream-dim);
+    font-size: 13px;
+    padding: 13px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+  }
+  .clear-btn:hover{ color: var(--cream); border-color: var(--cream-dim); }
+
+  /* ---------- RESULT SIDE ---------- */
+  .result-side{
+    padding: 36px;
+    display:flex; flex-direction:column;
+  }
+  .result-idle{
+    flex:1;
+    display:flex; flex-direction:column; align-items:flex-start; justify-content:center;
+    color: var(--cream-dim);
+  }
+  .result-idle .big{
+    font-family: var(--font-display);
+    font-size: 22px;
+    color: var(--cream);
+    margin: 0 0 8px;
+  }
+  .result-idle p{ font-size: 14px; line-height:1.6; max-width: 34ch; margin:0; }
+
+  .result-content{ display:none; flex:1; }
+  .result-content.active{ display:flex; flex-direction:column; }
+
+  .verdict-row{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom: 6px;
+  }
+  .verdict-label{
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--cream-dim);
+  }
+  .confidence{
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--turmeric);
+  }
+
+  .verdict-name{
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 27px;
+    margin: 4px 0 4px;
+  }
+  .verdict-name.ok{ color: #8fd66a; }
+  .verdict-name.warn{ color: var(--turmeric); }
+  .verdict-name.bad{ color: var(--chilli-red-bright); }
+
+  .severity-bar{
+    height: 6px; width:100%; border-radius: 4px;
+    background: rgba(243,236,217,0.1);
+    margin: 12px 0 22px;
+    overflow:hidden;
+  }
+  .severity-fill{
+    height:100%; border-radius:4px;
+    background: linear-gradient(90deg, #8fd66a, var(--turmeric), var(--chilli-red-bright));
+    width:0%;
+    transition: width 1s ease;
+  }
+
+  .info-block{
+    border-top: 1px solid var(--line);
+    padding: 16px 0;
+  }
+  .info-block:last-child{ border-bottom: 1px solid var(--line); }
+  .info-block .label{
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--turmeric);
+    margin-bottom: 6px;
+  }
+  .info-block p{
+    margin:0; font-size: 14px; line-height: 1.65; color: var(--cream);
+  }
+  .info-block ul{
+    margin: 6px 0 0; padding-left: 18px;
+    font-size: 14px; line-height: 1.65; color: var(--cream);
+  }
+  .info-block li{ margin-bottom: 4px; }
+
+  .proto-note{
+    margin-top: 18px;
+    font-size: 11.5px;
+    color: var(--cream-dim);
+    line-height: 1.6;
+    border-left: 2px solid var(--chilli-red);
+    padding-left: 12px;
+  }
+
+  /* ---------- HOW IT WORKS ---------- */
+  .how{
+    margin-top: 84px;
+  }
+  .how h2{
+    font-family: var(--font-display);
+    font-size: 26px;
+    margin: 0 0 30px;
+  }
+  .how-grid{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+  }
+  @media (max-width: 760px){ .how-grid{ grid-template-columns: 1fr; } }
+  .how-card{
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 22px;
+    background: rgba(53,80,42,0.14);
+  }
+  .how-step{
+    font-family: var(--font-mono);
+    color: var(--chilli-red-bright);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    margin-bottom: 10px;
+  }
+  .how-card h3{
+    font-family: var(--font-display);
+    font-size: 17px;
+    margin: 0 0 8px;
+  }
+  .how-card p{
+    font-size: 13.5px; line-height: 1.6; color: var(--cream-dim); margin:0;
+  }
+
+  /* ---------- FOOTER ---------- */
+  footer{
+    border-top: 1px solid var(--line);
+    padding: 26px 6vw;
+    display:flex; justify-content:space-between; align-items:center;
+    font-size: 12px; color: var(--cream-dim);
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .scan-sweep.running{ animation: none; opacity:0.6; }
+    .severity-fill{ transition:none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 6C12 6 8 12 8 20C8 27 12 32 17 32C22 32 26 27 26 20" stroke="#e2a13a" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M17 32C17 32 24 30 28 22C31 16 30 9 30 9C30 9 22 8 17 15" fill="#d1382a" stroke="#e8543f" stroke-width="1.6"/>
+      <circle cx="12" cy="9" r="2" fill="#8fd66a"/>
+    </svg>
+    <div class="brand-text">Agriculture<b>Analysis</b></div>
+  </div>
+  <nav class="site-links">
+    <a href="#scan">Scan</a>
+    <a href="#how">How it works</a>
+  </nav>
+</header>
+
+<main>
+  <div class="eyebrow">Chilli crop diagnostics — prototype</div>
+  <h1 class="hero-title">Photograph the plant. <em>Know what's wrong.</em></h1>
+  <p class="hero-sub">Upload a photo of a chilli leaf, fruit, or plant. The scanner looks at colour, spotting, and texture patterns to flag common infections, explain how they spread, and tell you what to do next — right from your phone, in the field.</p>
+
+  <section class="scan-panel" id="scan">
+    <div class="drop-side">
+      <div class="drop-label">01 — Upload photo</div>
+      <label class="dropzone" id="dropzone">
+        <input type="file" id="fileInput" accept="image/*" capture="environment">
+        <div class="scan-sweep" id="sweep"></div>
+        <div class="dz-empty" id="dzEmpty">
+          <svg class="dz-icon" viewBox="0 0 48 48" fill="none">
+            <rect x="6" y="6" width="36" height="36" rx="6" stroke="#cfc7ac" stroke-width="1.6"/>
+            <circle cx="17" cy="18" r="3.2" stroke="#e2a13a" stroke-width="1.6"/>
+            <path d="M8 34L18 24L25 31L32 22L40 32" stroke="#e8543f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <p class="main">Drop a chilli photo here</p>
+          <p class="sub">or tap to browse — JPG / PNG, close-up of leaf or fruit works best</p>
+          <span class="dz-btn">Choose photo</span>
+        </div>
+        <div class="dz-preview" id="dzPreview">
+          <img id="previewImg" alt="Uploaded chilli photo">
+          <span class="swap">Tap to replace</span>
+        </div>
+      </label>
+
+      <div class="analyze-row">
+        <button class="analyze-btn" id="analyzeBtn" disabled>Analyze photo</button>
+        <button class="clear-btn" id="clearBtn">Clear</button>
+      </div>
+    </div>
+
+    <div class="result-side">
+      <div class="result-idle" id="resultIdle">
+        <p class="big">Result appears here</p>
+        <p>Once you upload and analyze a photo, you'll see the diagnosis, how the infection spreads, and recommended next steps.</p>
+      </div>
+
+      <div class="result-content" id="resultContent">
+        <div class="verdict-row">
+          <span class="verdict-label">Diagnosis</span>
+          <span class="confidence" id="confidence">— % confidence</span>
+        </div>
+        <div class="verdict-name" id="verdictName">—</div>
+        <div class="severity-bar"><div class="severity-fill" id="severityFill"></div></div>
+
+        <div class="info-block">
+          <div class="label">Is it infected?</div>
+          <p id="statusText">—</p>
+        </div>
+        <div class="info-block">
+          <div class="label">How it spreads</div>
+          <p id="causeText">—</p>
+        </div>
+        <div class="info-block">
+          <div class="label">What to do now</div>
+          <ul id="actionList"></ul>
+        </div>
+
+        <div class="proto-note">
+          Prototype scanner: this build estimates infection from colour and spot-pattern analysis of the photo itself, done in your browser. Swap in a trained CNN (e.g. a VGG16 / Faster R-CNN classifier served over an API) behind the "Analyze photo" button for production-grade accuracy.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="how" id="how">
+    <h2>How the scan works</h2>
+    <div class="how-grid">
+      <div class="how-card">
+        <div class="how-step">Step 1</div>
+        <h3>Capture</h3>
+        <p>Take a clear, well-lit photo of the affected leaf, stem, or fruit — fill the frame, avoid heavy shadow.</p>
+      </div>
+      <div class="how-card">
+        <div class="how-step">Step 2</div>
+        <h3>Analyze</h3>
+        <p>The scanner reads discoloration, spotting, and surface texture to match against known chilli disease patterns.</p>
+      </div>
+      <div class="how-card">
+        <div class="how-step">Step 3</div>
+        <h3>Act</h3>
+        <p>You get a plain-language diagnosis, how it spreads, and the immediate steps to protect the rest of the crop.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <span>Agriculture Analysis — chilli crop scanner</span>
+  <span>Prototype build</span>
+</footer>
+
+<script>
+(function(){
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const dzEmpty = document.getElementById('dzEmpty');
+  const dzPreview = document.getElementById('dzPreview');
+  const previewImg = document.getElementById('previewImg');
+  const analyzeBtn = document.getElementById('analyzeBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const sweep = document.getElementById('sweep');
+  const resultIdle = document.getElementById('resultIdle');
+  const resultContent = document.getElementById('resultContent');
+  const verdictName = document.getElementById('verdictName');
+  const confidence = document.getElementById('confidence');
+  const severityFill = document.getElementById('severityFill');
+  const statusText = document.getElementById('statusText');
+  const causeText = document.getElementById('causeText');
+  const actionList = document.getElementById('actionList');
+
+  let currentImg = null;
+  let currentFile = null;
+
+  // ---- Disease knowledge base ----
+  const CONDITIONS = {
+    healthy: {
+      name: "Healthy plant",
+      tone: "ok",
+      status: "No signs of infection detected. Leaf colour and surface look consistent with a healthy chilli plant.",
+      cause: "Not applicable — the plant shows normal green pigmentation with no notable spotting, curling, or discoloration.",
+      actions: [
+        "Keep up your current watering and spacing routine",
+        "Check plants weekly for early spotting or curling leaves",
+        "Avoid overhead watering late in the day to limit fungal risk"
+      ]
+    },
+    leafCurl: {
+      name: "Chilli Leaf Curl Virus",
+      tone: "bad",
+      status: "Pattern suggests viral leaf curl — leaves show puckering, upward curling, and pale-to-yellow patches.",
+      cause: "Spread mainly by whitefly (Bemisia tabaci) feeding on the plant and moving between crops. It does not spread through soil or seed contact.",
+      actions: [
+        "Remove and destroy visibly infected plants to stop spread",
+        "Control whitefly with yellow sticky traps or a recommended insecticide",
+        "Avoid planting new chillies right next to infected beds",
+        "Choose curl-virus-resistant varieties for the next sowing"
+      ]
+    },
+    anthracnose: {
+      name: "Anthracnose (fruit rot)",
+      tone: "bad",
+      status: "Sunken, dark, water-soaked lesions detected — consistent with anthracnose fungal infection, often on ripening fruit.",
+      cause: "Caused by Colletotrichum fungus. It thrives in warm, humid weather and spreads through rain splash, contaminated tools, and infected plant debris left in the field.",
+      actions: [
+        "Remove and destroy infected fruit and fallen debris promptly",
+        "Apply a copper-based or recommended fungicide at first sign",
+        "Improve airflow by spacing plants and pruning lower leaves",
+        "Avoid overhead irrigation; water at the base instead"
+      ]
+    },
+    bacterialSpot: {
+      name: "Bacterial Leaf Spot",
+      tone: "warn",
+      status: "Small, dark, water-soaked spots with yellow halos detected on the leaf surface — typical of bacterial spot.",
+      cause: "Caused by Xanthomonas bacteria, spread by splashing water, wet foliage, and contaminated hands or tools during humid conditions.",
+      actions: [
+        "Avoid working in the field when leaves are wet",
+        "Remove severely spotted leaves and dispose away from the field",
+        "Rotate crops next season — avoid replanting chillies in the same bed",
+        "Apply a copper-based bactericide if spread continues"
+      ]
+    },
+    powderyMildew: {
+      name: "Powdery Mildew",
+      tone: "warn",
+      status: "Faint white-grey powdery patches detected on the leaf surface, typical of early-stage powdery mildew.",
+      cause: "Caused by fungal spores that spread through the air, favoured by high humidity with poor airflow, especially on the underside of older leaves.",
+      actions: [
+        "Improve spacing and prune dense foliage for better airflow",
+        "Apply a sulfur-based or neem-oil spray in early stages",
+        "Water at the base rather than wetting the leaves",
+        "Remove heavily coated leaves to reduce spore spread"
+      ]
+    },
+    cercospora: {
+      name: "Cercospora Leaf Spot",
+      tone: "warn",
+      status: "Circular spots with grey centres and darker margins detected — a pattern typical of Cercospora ('frog-eye') leaf spot.",
+      cause: "Fungal disease that spreads through wind, rain splash, and infected leaf debris left in the field, worsened by prolonged leaf wetness.",
+      actions: [
+        "Clear fallen leaves and plant debris around the base",
+        "Apply a recommended fungicide if more than a few leaves are affected",
+        "Mulch to reduce soil splash onto lower leaves",
+        "Avoid dense planting to help leaves dry faster after rain"
+      ]
+    }
+  };
+
+  function resetUI(){
+    analyzeBtn.disabled = true;
+    dzEmpty.style.display = 'flex';
+    dzPreview.classList.remove('active');
+    resultIdle.style.display = 'flex';
+    resultContent.classList.remove('active');
+    sweep.classList.remove('running');
+    currentImg = null;
+    currentFile = null;
+    fileInput.value = '';
+  }
+
+  dropzone.addEventListener('click', (e) => {
+    if (dzPreview.classList.contains('active')) {
+      // allow re-click to replace
+    }
+  });
+
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    currentFile = file;
+    const reader = new FileReader();
+    reader.onload = function(ev){
+      previewImg.src = ev.target.result;
+      dzEmpty.style.display = 'none';
+      dzPreview.classList.add('active');
+      analyzeBtn.disabled = false;
+      resultContent.classList.remove('active');
+      resultIdle.style.display = 'flex';
+
+      const img = new Image();
+      img.onload = () => { currentImg = img; };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // drag & drop
+  ['dragover','dragenter'].forEach(evt =>
+    dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.add('drag'); })
+  );
+  ['dragleave','drop'].forEach(evt =>
+    dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.remove('drag'); })
+  );
+  dropzone.addEventListener('drop', (e) => {
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      fileInput.files = e.dataTransfer.files;
+      fileInput.dispatchEvent(new Event('change'));
+    }
+  });
+
+  clearBtn.addEventListener('click', resetUI);
+
+  // ---- lightweight in-browser image heuristic ----
+  function analyzeImage(img){
+    const canvas = document.createElement('canvas');
+    const size = 160;
+    canvas.width = size; canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, size, size);
+    const data = ctx.getImageData(0, 0, size, size).data;
+
+    let green = 0, yellowBrown = 0, darkSpot = 0, whiteFilm = 0, total = 0;
+
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i], g = data[i+1], b = data[i+2];
+      const brightness = (r + g + b) / 3;
+      total++;
+
+      if (g > r + 12 && g > b + 12 && brightness > 40) {
+        green++;
+      } else if (r > 90 && g > 60 && b < 90 && r > b + 30 && g >= b) {
+        // yellow/brown tones
+        yellowBrown++;
+      } else if (brightness < 55) {
+        darkSpot++;
+      } else if (r > 190 && g > 190 && b > 190) {
+        whiteFilm++;
+      }
+    }
+
+    return {
+      greenRatio: green / total,
+      yellowBrownRatio: yellowBrown / total,
+      darkSpotRatio: darkSpot / total,
+      whiteFilmRatio: whiteFilm / total
+    };
+  }
+
+  function pickCondition(stats){
+    const { greenRatio, yellowBrownRatio, darkSpotRatio, whiteFilmRatio } = stats;
+
+    // simple deterministic scoring from the actual pixel stats
+    const scores = {
+      healthy: greenRatio * 1.4 - yellowBrownRatio - darkSpotRatio - whiteFilmRatio,
+      leafCurl: yellowBrownRatio * 1.3 - darkSpotRatio * 0.4,
+      anthracnose: darkSpotRatio * 1.5 - whiteFilmRatio,
+      bacterialSpot: (darkSpotRatio * 0.8 + yellowBrownRatio * 0.6) - whiteFilmRatio * 0.5,
+      powderyMildew: whiteFilmRatio * 2.0 - yellowBrownRatio * 0.3,
+      cercospora: (darkSpotRatio * 0.6 + yellowBrownRatio * 0.4)
+    };
+
+    let bestKey = 'healthy';
+    let bestScore = -Infinity;
+    for (const key in scores) {
+      if (scores[key] > bestScore) { bestScore = scores[key]; bestKey = key; }
+    }
+
+    // confidence derived from how dominant the winning signal is
+    const total = Object.values(scores).reduce((a,b) => a + Math.max(b,0), 0) || 1;
+    let confidencePct = Math.round((Math.max(bestScore,0) / total) * 100);
+    confidencePct = Math.min(97, Math.max(58, confidencePct + 45));
+
+    const severity = bestKey === 'healthy'
+      ? Math.round(8 + darkSpotRatio * 40)
+      : Math.round(35 + (yellowBrownRatio + darkSpotRatio + whiteFilmRatio) * 120);
+
+    return { key: bestKey, confidencePct, severity: Math.min(96, severity) };
+  }
+
+  // Point this at your Flask/FastAPI backend's /predict route.
+  const BACKEND_URL = 'http://localhost:5000/predict';
+
+  function renderResult(key, confidencePct, severity, source){
+    const cond = CONDITIONS[key] || CONDITIONS.healthy;
+
+    verdictName.textContent = cond.name;
+    verdictName.className = 'verdict-name ' + cond.tone;
+    confidence.textContent = confidencePct + '% confidence' + (source === 'heuristic' ? ' (local estimate)' : '');
+    statusText.textContent = cond.status;
+    causeText.textContent = cond.cause;
+    actionList.innerHTML = '';
+    cond.actions.forEach(a => {
+      const li = document.createElement('li');
+      li.textContent = a;
+      actionList.appendChild(li);
+    });
+
+    resultIdle.style.display = 'none';
+    resultContent.classList.add('active');
+    severityFill.style.width = '0%';
+    requestAnimationFrame(() => { severityFill.style.width = severity + '%'; });
+
+    sweep.classList.remove('running');
+    analyzeBtn.disabled = false;
+  }
+
+  async function analyzeWithBackend(file){
+    const formData = new FormData();
+    formData.append('image', file);
+    const res = await fetch(BACKEND_URL, { method: 'POST', body: formData });
+    if (!res.ok) throw new Error('Backend responded with ' + res.status);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    return { key: data.label, confidencePct: Math.round(data.confidence), severity: data.severity, source: 'model' };
+  }
+
+  function analyzeWithHeuristic(img){
+    const stats = analyzeImage(img);
+    const { key, confidencePct, severity } = pickCondition(stats);
+    return { key, confidencePct, severity, source: 'heuristic' };
+  }
+
+  analyzeBtn.addEventListener('click', async () => {
+    if (!currentImg || !currentFile) return;
+    analyzeBtn.disabled = true;
+    sweep.classList.add('running');
+    resultContent.classList.remove('active');
+    resultIdle.style.display = 'flex';
+
+    const minDelay = new Promise(r => setTimeout(r, 900)); // keep the scan animation visible briefly
+
+    try {
+      const [result] = await Promise.all([analyzeWithBackend(currentFile), minDelay]);
+      renderResult(result.key, result.confidencePct, result.severity, result.source);
+    } catch (err) {
+      // Backend not running / not reachable / model not loaded yet — fall back to the
+      // in-browser heuristic so the demo still works end-to-end.
+      console.warn('Backend unavailable, using local heuristic:', err.message);
+      await minDelay;
+      const result = analyzeWithHeuristic(currentImg);
+      renderResult(result.key, result.confidencePct, result.severity, result.source);
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
