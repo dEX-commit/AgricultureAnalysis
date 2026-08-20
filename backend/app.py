@@ -31,7 +31,7 @@ CORS(app)  # allow the frontend (served from a different origin/file) to call th
 
 MODEL_PATH = os.path.join(
     os.path.dirname(__file__),
-    "vgg16_chili_final.keras"
+    "vgg16_cbam_chili_final(3).keras"
 )
 IMG_SIZE = (224, 224)  # match whatever size you trained on (224x224 is VGG16 default)
 
